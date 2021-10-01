@@ -42,6 +42,17 @@ LongInteger::LongInteger(const std::string& number)
     Trim();
 }
 
+LongInteger::LongInteger(const LongInteger& other) noexcept
+    : sign(other.sign)
+    , data(other.data)
+    {}
+
+LongInteger& LongInteger::operator=(const LongInteger& other) noexcept {
+    sign = other.sign;
+    data = other.data;
+    return *this;
+}
+
 LongInteger LongInteger::operator+() const noexcept {
     return *this;
 }
@@ -53,15 +64,19 @@ LongInteger LongInteger::operator-() const noexcept {
 }
 
 LongInteger LongInteger::operator+(const LongInteger& rhs) const noexcept {
+    LongInteger result = *this;
+    result += rhs;
+    return result;
+}
+
+LongInteger& LongInteger::operator+=(const LongInteger& rhs) noexcept {
     if(sign == rhs.sign) {
         LongInteger result;
-        result.sign = sign;
         const int64_t lhsSize = data.size();
         const int64_t rhsSize = rhs.data.size();
-        const int64_t resultSize = std::max(lhsSize, rhsSize);
-        result.data.reserve(resultSize);
+        data.resize(std::max(data.size(), rhs.data.size()));
         int carry = 0;
-        for(int i = 0; i < resultSize || carry; ++i) {
+        for(int i = 0; i < std::max(lhsSize, rhsSize) || carry; ++i) {
             const auto lhsValue = i < lhsSize ? data[i] : 0;
             const auto rhsValue = i < rhsSize ? rhs.data[i] : 0;
             auto resultValue = carry + lhsValue + rhsValue;
@@ -69,32 +84,75 @@ LongInteger LongInteger::operator+(const LongInteger& rhs) const noexcept {
                 carry = 1;
                 resultValue -= base;
             }
-            result.data.push_back(resultValue);
+            data[i] = resultValue;
         }
-        return result;
+        return *this;
     }
-    return *this - (-rhs);
+    return *this -= (-rhs);
 }
 
 LongInteger LongInteger::operator-(const LongInteger& rhs) const noexcept {
+    LongInteger result = *this;
+    result -= rhs;
+    return result;
+}
+
+LongInteger& LongInteger::operator-=(const LongInteger& rhs) noexcept {
     if(sign == rhs.sign) {
         if (Abs() >= rhs.Abs()) {
-            auto result(*this);
             int carry = 0;
             for(int i = 0; i < (int)rhs.data.size() || carry; ++i) {
                 const auto rhsValue = i < (int)rhs.data.size() ? rhs.data[i] : 0;
-                result.data[i] -= carry + rhsValue;
-                if(result.data[i] < 0) {
+                data[i] -= carry + rhsValue;
+                carry = 0;
+                if(data[i] < 0) {
                     carry = 1;
-                    result.data[i] += base;
+                    data[i] += base;
                 }
             }
-            result.Trim();
-            return result;
+            Trim();
+            return *this;
         }
-        return -(rhs - *this);
+        LongInteger result = -rhs;
+        return *this = result += *this;
     }
-    return *this + (-rhs);
+    return *this += (-rhs);
+}
+
+LongInteger LongInteger::operator*(const LongInteger& rhs) const noexcept {
+    LongInteger result;
+    for(size_t i = 0; i < rhs.data.size(); ++i) {
+        auto summand = *this;
+        summand.MultiplyByPowerOfBase(i);
+        summand.MultiplyByLessThanBase(rhs.data[i]);
+        result += summand;
+    }
+    result.sign = sign * rhs.sign;
+    return result;
+}
+
+LongInteger& LongInteger::operator*=(const LongInteger& rhs) noexcept {
+    return *this = *this * rhs;
+}
+
+LongInteger LongInteger::operator/(const LongInteger& rhs) const noexcept {
+    LongInteger result, temp;
+    DivideWithRemainder(rhs, result, temp);
+    return result;
+}
+
+LongInteger& LongInteger::operator/=(const LongInteger& rhs) noexcept {
+    return *this = *this / rhs;
+}
+
+LongInteger LongInteger::operator%(const LongInteger& rhs) const noexcept {
+    LongInteger result, temp;
+    DivideWithRemainder(rhs, temp, result);
+    return result;
+}
+
+LongInteger& LongInteger::operator%=(const LongInteger& rhs) noexcept {
+    return *this = *this % rhs;
 }
 
 bool LongInteger::operator<(const LongInteger& rhs) const noexcept {
@@ -156,8 +214,101 @@ std::string LongInteger::ToString() const noexcept {
     return result.str();
 }
 
+void LongInteger::DivideByLessThanBase(const int64_t value) {
+    if(value >= base) {
+        throw std::runtime_error("Value must be less than base");
+    }
+    int64_t carry = 0;
+    for(int i = data.size() - 1; i >= 0; --i) {
+        int64_t block = (carry * base + data[i]) / value;
+        carry = (carry * base + data[i]) % value;
+        data[i] = block;
+    }
+    Trim();
+}
+
+void LongInteger::DivideWithRemainder(const LongInteger& divisor,
+                         LongInteger& quotient,
+                         LongInteger& remainder) const
+{
+    if(divisor.IsZero()) {
+        throw std::runtime_error("Division by zero");
+    }
+    if(data.size() < divisor.data.size()) {
+        quotient = 0;
+        remainder = *this;
+        return;
+    }
+    remainder = this->Abs();
+    LongInteger subtrahend = divisor.Abs();
+    subtrahend.MultiplyByPowerOfBase(data.size() - divisor.data.size());
+    quotient = 0;
+    LongInteger quotientSummand(1);
+    quotientSummand.MultiplyByPowerOfBase(data.size() - divisor.data.size());
+    while(subtrahend < remainder) {
+        subtrahend.MultiplyByLessThanBase(10);
+        quotientSummand.MultiplyByLessThanBase(10);
+    }
+    subtrahend.DivideByLessThanBase(10);
+    quotientSummand.DivideByLessThanBase(10);
+
+    while(remainder >= divisor && quotientSummand > 0) {
+        while(remainder >= subtrahend) {
+            remainder -= subtrahend;
+            quotient += quotientSummand;
+        }
+        subtrahend.DivideByLessThanBase(10);
+        quotientSummand.DivideByLessThanBase(10);
+    }
+    remainder.sign = sign;
+    quotient.sign = sign * divisor.sign;
+}
+
+void LongInteger::MultiplyByLessThanBase(const int64_t value) {
+    if(value > base) {
+        throw std::runtime_error("Value must be less than base");
+    }
+    int64_t carry = 0;
+    for(auto& block : data) {
+        block = block * value + carry;
+        carry = 0;
+        if(block >= base) {
+            carry = block / base;
+            block %= base;
+        }
+    }
+    if(carry > 0) {
+        data.push_back(carry);
+    }
+}
+
+void LongInteger::MultiplyByPowerOfBase(const uint64_t power) {
+    for(uint64_t i = 0; i < power; ++i) {
+        data.push_back(0);
+    }
+    for(int64_t i = data.size() - 1; i >= 0; --i) {
+        if(i >= (int64_t)power) {
+            data[i] = data[i - power];
+        }
+        else {
+            data[i] = 0;
+        }
+    }
+}
+
 void LongInteger::Trim() noexcept {
     while(data.size() && !data.back()) {
         data.pop_back();
     }
+}
+
+std::ostream& operator<<(std::ostream& stream, const LongInteger& value) {
+    return stream << value.ToString();
+}
+
+std::istream& operator>>(std::istream& stream, LongInteger& value) {
+    std::string str;
+    stream >> str;
+    value = LongInteger(str);
+    return stream;
 }

@@ -12,11 +12,12 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    std::string lhs, rhs, operation;
+    std::string operation;
+    LongInteger lhs, rhs;
     try {
-        lhs = argv[1];
+        lhs = std::string(argv[1]);
         operation = argv[2];
-        rhs = argv[3];
+        rhs = std::string(argv[3]);
     } catch(std::exception& ex) {
         std::cout << ex.what() << std::endl;
         return 0;
@@ -25,7 +26,10 @@ int main(int argc, char** argv) {
     std::map<std::string, std::function<LongInteger(const LongInteger&, const LongInteger&)>>
     integerOperations({
         { "+", [](const auto& lhs, const auto& rhs)->auto { return lhs + rhs; } },
-        { "-", [](const auto& lhs, const auto& rhs)->auto { return lhs - rhs; } }
+        { "-", [](const auto& lhs, const auto& rhs)->auto { return lhs - rhs; } },
+        { "*", [](const auto& lhs, const auto& rhs)->auto { return lhs * rhs; } },
+        { "/", [](const auto& lhs, const auto& rhs)->auto { return lhs / rhs; } },
+        { "%", [](const auto& lhs, const auto& rhs)->auto { return lhs % rhs; } }
     });
     std::map<std::string, std::function<bool(const LongInteger&, const LongInteger&)>>
     logicalOperations({
@@ -45,6 +49,6 @@ int main(int argc, char** argv) {
                   << std::endl;
     }
     else {
-        std::cout << "Wrong operation. Possible operations: +, -, <, >, <=, >=, ==" << std::endl;
+        std::cout << "Wrong operation. Possible operations: +, -, *, /, %, <, >, <=, >=, ==" << std::endl;
     }
 }
