@@ -17,6 +17,15 @@ LongInteger::LongInteger(int64_t value) noexcept
     }
 }
 
+LongInteger::LongInteger(uint64_t value) noexcept
+    : sign(1)
+{
+    while(value) {
+        data.push_back(value % base);
+        value /= base;
+    }
+}
+
 LongInteger::LongInteger(const std::string& number)
     : sign(1)
     , data(0)

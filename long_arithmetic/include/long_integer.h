@@ -9,6 +9,18 @@ public:
 
     LongInteger(int64_t value) noexcept;
 
+    LongInteger(uint64_t value) noexcept;
+
+    template<typename T, std::enable_if_t<std::is_integral_v<T> && std::is_signed_v<T>, bool> = true>
+    LongInteger(T value) noexcept
+        : LongInteger(static_cast<int64_t>(value))
+        {}
+
+    template<typename T, std::enable_if_t<std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
+    LongInteger(T value) noexcept
+        : LongInteger(static_cast<uint64_t>(value))
+        {}
+
     LongInteger(const std::string& number);
 
     LongInteger(const LongInteger& other) noexcept;
