@@ -6,25 +6,27 @@ set(CMAKE_CXX_STANDARD 17)
 add_compile_options(-g -Wall -std=c++17)
 
 add_executable(long_arithmetic
-    main.cpp
-    long_integer.cpp
+    src/main.cpp
+    src/long_integer.cpp
 )
-
-add_subdirectory(./googletest)
+target_include_directories(long_arithmetic
+    PRIVATE include
+)
 
 enable_testing()
-
-include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
-
-add_executable(
-    long_integer_test
-    long_integer_test.cpp
-    long_integer.cpp
+# include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+add_executable(long_integer_test
+    tests/long_integer_test.cpp
+    src/long_integer.cpp
 )
-
-target_link_libraries(
-    long_integer_test
-    gtest gtest_main
+target_include_directories(long_integer_test
+    PRIVATE 
+        include
+        ${gtest_SOURCE_DIR}/include
+        ${gtest_SOURCE_DIR}
 )
-
+target_link_libraries(long_integer_test
+    gtest
+    gtest_main
+)
 add_test(UnitTests long_integer_test)
