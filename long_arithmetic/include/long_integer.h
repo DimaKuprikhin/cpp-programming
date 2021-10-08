@@ -27,13 +27,13 @@ public:
 
     LongInteger& operator=(LongInteger&& other) noexcept;
 
-    LongInteger operator+() const noexcept;
+    LongInteger operator+() const;
 
-    LongInteger operator-() const noexcept;
+    LongInteger operator-() const;
 
-    LongInteger operator+(const LongInteger& rhs) const noexcept;
+    LongInteger operator+(const LongInteger& rhs) const;
 
-    LongInteger& operator+=(const LongInteger& rhs) noexcept;
+    LongInteger& operator+=(const LongInteger& rhs);
 
     LongInteger operator-(const LongInteger& rhs) const noexcept;
 
@@ -68,6 +68,18 @@ public:
     std::string ToString() const noexcept;
 
 private:
+    int64_t At(size_t index) const noexcept;
+
+    static void ElementWiseAddition(
+        const LongInteger& first,
+        const LongInteger& second,
+        LongInteger& result);
+
+    static void ElementWiseSubtraction(
+        const LongInteger& lhs,
+        const LongInteger& rhs,
+        LongInteger& result);
+    
     void DivideByLessThanBase(const int64_t value);
 
     void DivideByPowerOfBase(const uint64_t power);
@@ -75,6 +87,10 @@ private:
     void DivideWithRemainder(const LongInteger& divisor,
                              LongInteger& quotient,
                              LongInteger& remainder) const;
+
+    static bool GreaterAbsoluteValue(
+        const LongInteger& lhs,
+        const LongInteger& rhs);
 
     void MultiplyByLessThanBase(const int64_t value);
 

@@ -72,47 +72,36 @@ LongInteger& LongInteger::operator=(LongInteger&& other) noexcept {
     return *this;
 }
 
-LongInteger LongInteger::operator+() const noexcept {
+LongInteger LongInteger::operator+() const {
     return *this;
 }
 
-LongInteger LongInteger::operator-() const noexcept {
+LongInteger LongInteger::operator-() const {
     auto result(*this);
     result.sign *= -1;
     return result;
 }
 
-LongInteger LongInteger::operator+(const LongInteger& rhs) const noexcept {
-    LongInteger result = *this;
+LongInteger LongInteger::operator+(const LongInteger& rhs) const {
+    auto result = *this;
     result += rhs;
     return result;
 }
 
-LongInteger& LongInteger::operator+=(const LongInteger& rhs) noexcept {
+LongInteger& LongInteger::operator+=(const LongInteger& rhs) {
     if(sign == rhs.sign) {
-        const int64_t rhsSize = rhs.data.size();
-        const int64_t size = std::max(static_cast<int64_t>(data.size()), rhsSize);
-        data.resize(size);
-        int carry = 0;
-        for(int i = 0; i < size || carry; ++i) {
-            auto value = 0;
-            if(i < size) {
-                value = data[i];
-            } else {
-                data.push_back(0);
-            }
-            value += carry + (i < rhsSize ? rhs.data[i] : 0);
-            carry = 0;
-            if(value >= base) {
-                carry = 1;
-                value -= base;
-            }
-            data[i] = value;
-        }
-        return *this;
+        ElementWiseAddition(*this, rhs, *this);
     }
-    // TODO: unnecessary copy.
-    return *this -= (-rhs);
+    else {
+        if(GreaterAbsoluteValue(*this, rhs)) {
+            ElementWiseSubtraction(*this, rhs, *this);
+        }
+        else {
+            ElementWiseSubtraction(rhs, *this, *this);
+            sign = -sign;
+        }
+    }
+    return *this;
 }
 
 LongInteger LongInteger::operator-(const LongInteger& rhs) const noexcept {
@@ -238,6 +227,49 @@ std::string LongInteger::ToString() const noexcept {
     return result.str();
 }
 
+int64_t LongInteger::At(size_t index) const noexcept {
+    if(index < data.size()) {
+        return data[index];
+    }
+    return 0;
+}
+
+void LongInteger::ElementWiseAddition(
+    const LongInteger& first,
+    const LongInteger& second,
+    LongInteger& result) 
+{
+    result.data.resize(std::max(first.data.size(), second.data.size()) + 1, 0);
+    int carry = 0;
+    for(int i = 0; i < static_cast<int>(result.data.size()); ++i) {
+        result.data[i] = carry + first.At(i) + second.At(i);
+        carry = 0;
+        if(result.data[i] >= base) {
+            result.data[i] -= base;
+            carry = 1;
+        }
+    }
+    result.Trim();
+}
+
+void LongInteger::ElementWiseSubtraction(
+    const LongInteger& lhs,
+    const LongInteger& rhs,
+    LongInteger& result)
+{
+    result.data.resize(std::max(lhs.data.size(), rhs.data.size()) + 1, 0);
+    int carry = 0;
+    for(int i = 0; i < static_cast<int>(result.data.size()); ++i) {
+        result.data[i] = lhs.At(i) - rhs.At(i) - carry;
+        carry = 0;
+        if(result.data[i] < 0) {
+            result.data[i] += base;
+            carry = 1;
+        }
+    }
+    result.Trim();
+}
+
 void LongInteger::DivideByLessThanBase(const int64_t value) {
     if(value >= base) {
         throw std::runtime_error("Value must be less than base");
@@ -286,6 +318,21 @@ void LongInteger::DivideWithRemainder(const LongInteger& divisor,
     }
     remainder.sign = sign;
     quotient.sign = sign * divisor.sign;
+}
+
+bool LongInteger::GreaterAbsoluteValue(
+    const LongInteger& lhs,
+    const LongInteger& rhs)
+{
+    if(lhs.data.size() != rhs.data.size()) {
+        return lhs.data.size() > rhs.data.size();
+    }
+    for(int i = lhs.data.size() - 1; i >= 0; --i) {
+        if(lhs.At(i) != rhs.At(i)) {
+            return lhs.At(i) > rhs.At(i);
+        }
+    }
+    return false;
 }
 
 void LongInteger::MultiplyByLessThanBase(const int64_t value) {
