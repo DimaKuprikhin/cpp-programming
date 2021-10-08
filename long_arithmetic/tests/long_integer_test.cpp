@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <long_integer.h>
+#include "test_expressions.h"
 
 TEST(LongIntegerTest, ConstructFromStringTest) {
     EXPECT_EQ(LongInteger("455"), 455);
@@ -14,6 +15,14 @@ TEST(LongIntegerTest, OperatorPlusTest) {
     EXPECT_EQ(LongInteger("-12") + -1000, -1012);
     EXPECT_EQ(LongInteger(500000000) + 500000001, 1000000001);
     EXPECT_EQ(LongInteger(1) + -1000000002, -1000000001);
+    EXPECT_EQ(LongInteger(INT64_MIN) + INT64_MAX + 2, 1);
+
+    for(int i = 0, j = 0;
+        i < testIntegers;
+        j = (j + 1 == testIntegers ? 0 : j + 1), i = (j == 0 ? i + 1 : i))
+    {
+        EXPECT_EQ(integers[i] + integers[j], plusResults[i][j]);
+    }
 }
 
 TEST(LongIntegerTest, OperatorMinusTest) {
@@ -21,6 +30,14 @@ TEST(LongIntegerTest, OperatorMinusTest) {
     EXPECT_EQ(LongInteger("-12") - 1000, -1012);
     EXPECT_EQ(LongInteger("12") - -1000, 1012);
     EXPECT_EQ(LongInteger("-12") - -1000, 988);
+    EXPECT_EQ(500000000_li - -500000001, 1000000001);
+
+    for(int i = 0, j = 0;
+        i < testIntegers;
+        j = (j + 1 == testIntegers ? 0 : j + 1), i = (j == 0 ? i + 1 : i))
+    {
+        EXPECT_EQ(integers[i] - integers[j], minusResults[i][j]);
+    }
 }
 
 TEST(LongIntegerTest, OperatorMultiplyTest) {
@@ -28,7 +45,7 @@ TEST(LongIntegerTest, OperatorMultiplyTest) {
     EXPECT_EQ(LongInteger("12") * -32, -384);
     EXPECT_EQ(LongInteger("+0") * 32, 0);
     EXPECT_EQ(LongInteger("12000000000000") * 32000000,
-              LongInteger("384000000000000000000"));
+              "384000000000000000000"_li);
     EXPECT_EQ(LongInteger("12000000000000") * -32000000,
               LongInteger("-384000000000000000000"));
     EXPECT_EQ(LongInteger("-12345600000000") * LongInteger(-78912300000000),
