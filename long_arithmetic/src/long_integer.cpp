@@ -80,23 +80,28 @@ LongInteger LongInteger::operator+(const LongInteger& rhs) const noexcept {
 
 LongInteger& LongInteger::operator+=(const LongInteger& rhs) noexcept {
     if(sign == rhs.sign) {
-        LongInteger result;
-        const int64_t lhsSize = data.size();
         const int64_t rhsSize = rhs.data.size();
-        data.resize(std::max(data.size(), rhs.data.size()));
+        const int64_t size = std::max(static_cast<int64_t>(data.size()), rhsSize);
+        data.resize(size);
         int carry = 0;
-        for(int i = 0; i < std::max(lhsSize, rhsSize) || carry; ++i) {
-            const auto lhsValue = i < lhsSize ? data[i] : 0;
-            const auto rhsValue = i < rhsSize ? rhs.data[i] : 0;
-            auto resultValue = carry + lhsValue + rhsValue;
-            if(resultValue >= base) {
-                carry = 1;
-                resultValue -= base;
+        for(int i = 0; i < size || carry; ++i) {
+            auto value = 0;
+            if(i < size) {
+                value = data[i];
+            } else {
+                data.push_back(0);
             }
-            data[i] = resultValue;
+            value += carry + (i < rhsSize ? rhs.data[i] : 0);
+            carry = 0;
+            if(value >= base) {
+                carry = 1;
+                value -= base;
+            }
+            data[i] = value;
         }
         return *this;
     }
+    // TODO: unnecessary copy.
     return *this -= (-rhs);
 }
 

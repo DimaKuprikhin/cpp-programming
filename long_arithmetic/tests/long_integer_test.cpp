@@ -12,6 +12,8 @@ TEST(LongIntegerTest, OperatorPlusTest) {
     EXPECT_EQ(LongInteger("-12") + 1000, 988);
     EXPECT_EQ(LongInteger("12") + -1000, -988);
     EXPECT_EQ(LongInteger("-12") + -1000, -1012);
+    EXPECT_EQ(LongInteger(500000000) + 500000001, 1000000001);
+    EXPECT_EQ(LongInteger(1) + -1000000002, -1000000001);
 }
 
 TEST(LongIntegerTest, OperatorMinusTest) {
