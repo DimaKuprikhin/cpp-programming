@@ -93,7 +93,7 @@ LongInteger& LongInteger::operator+=(const LongInteger& rhs) {
         ElementWiseAddition(*this, rhs, *this);
     }
     else {
-        if(GreaterAbsoluteValue(*this, rhs)) {
+        if(LessAbsoluteValue(rhs, *this)) {
             ElementWiseSubtraction(*this, rhs, *this);
         }
         else {
@@ -115,7 +115,7 @@ LongInteger& LongInteger::operator-=(const LongInteger& rhs) {
         ElementWiseAddition(*this, rhs, *this);
     }
     else {
-        if(GreaterAbsoluteValue(*this, rhs)) {
+        if(LessAbsoluteValue(rhs, *this)) {
             ElementWiseSubtraction(*this, rhs, *this);
         }
         else {
@@ -126,7 +126,13 @@ LongInteger& LongInteger::operator-=(const LongInteger& rhs) {
     return *this;
 }
 
-LongInteger LongInteger::operator*(const LongInteger& rhs) const noexcept {
+LongInteger LongInteger::operator*(const LongInteger& rhs) const {
+    auto result = *this;
+    result *= rhs;
+    return result;
+}
+
+LongInteger& LongInteger::operator*=(const LongInteger& rhs) {
     LongInteger result;
     for(size_t i = 0; i < rhs.data.size(); ++i) {
         auto summand = *this;
@@ -135,49 +141,42 @@ LongInteger LongInteger::operator*(const LongInteger& rhs) const noexcept {
         result += summand;
     }
     result.sign = sign * rhs.sign;
+    return *this = std::move(result);
+}
+
+LongInteger LongInteger::operator/(const LongInteger& rhs) const {
+    auto result = *this;
+    result /= rhs;
     return result;
 }
 
-LongInteger& LongInteger::operator*=(const LongInteger& rhs) noexcept {
-    return *this = *this * rhs;
-}
-
-LongInteger LongInteger::operator/(const LongInteger& rhs) const noexcept {
+LongInteger& LongInteger::operator/=(const LongInteger& rhs) {
     LongInteger result, temp;
     DivideWithRemainder(rhs, result, temp);
+    return *this = std::move(result);
+}
+
+LongInteger LongInteger::operator%(const LongInteger& rhs) const {
+    auto result = *this;
+    result %= rhs;
     return result;
 }
 
-LongInteger& LongInteger::operator/=(const LongInteger& rhs) noexcept {
-    return *this = *this / rhs;
-}
-
-LongInteger LongInteger::operator%(const LongInteger& rhs) const noexcept {
+LongInteger& LongInteger::operator%=(const LongInteger& rhs) {
     LongInteger result, temp;
     DivideWithRemainder(rhs, temp, result);
-    return result;
-}
-
-LongInteger& LongInteger::operator%=(const LongInteger& rhs) noexcept {
-    return *this = *this % rhs;
+    return *this = std::move(result);
 }
 
 bool LongInteger::operator<(const LongInteger& rhs) const noexcept {
     if(IsZero() && rhs.IsZero()) {
         return false;
     }
-    if(sign * rhs.sign < 0) {
-        return sign < 0;
+    if(sign != rhs.sign) {
+        return sign == -1;
     }
-    if(data.size() != rhs.data.size()) {
-        return data.size() * sign < rhs.data.size() * rhs.sign;
-    }
-    for(int i = data.size() - 1; i >= 0; --i) {
-        if(data[i] != rhs.data[i]) {
-            return data[i] * sign < rhs.data[i] * rhs.sign;
-        }
-    }
-    return false;
+    return (sign == 1 && LessAbsoluteValue(*this, rhs))
+            || (sign == -1 && LessAbsoluteValue(rhs, *this));
 }
 
 bool LongInteger::operator>(const LongInteger& rhs) const noexcept {
@@ -196,7 +195,7 @@ bool LongInteger::operator==(const LongInteger& rhs) const noexcept {
     return !(*this < rhs || *this > rhs);
 }
 
-LongInteger LongInteger::Abs() const noexcept {
+LongInteger LongInteger::Abs() const {
     auto result(*this);
     result.sign *= result.sign;
     return result;
@@ -206,7 +205,7 @@ bool LongInteger::IsZero() const noexcept {
     return !data.size();
 }
 
-std::string LongInteger::ToString() const noexcept {
+std::string LongInteger::ToString() const {
     if(IsZero()) {
         return "0";
     }
@@ -289,6 +288,7 @@ void LongInteger::DivideWithRemainder(const LongInteger& divisor,
         remainder = *this;
         return;
     }
+
     remainder = this->Abs();
     LongInteger subtrahend = divisor.Abs();
     subtrahend.MultiplyByPowerOfBase(data.size() - divisor.data.size());
@@ -314,16 +314,16 @@ void LongInteger::DivideWithRemainder(const LongInteger& divisor,
     quotient.sign = sign * divisor.sign;
 }
 
-bool LongInteger::GreaterAbsoluteValue(
+bool LongInteger::LessAbsoluteValue(
     const LongInteger& lhs,
-    const LongInteger& rhs)
+    const LongInteger& rhs) noexcept
 {
     if(lhs.data.size() != rhs.data.size()) {
-        return lhs.data.size() > rhs.data.size();
+        return lhs.data.size() < rhs.data.size();
     }
     for(int i = lhs.data.size() - 1; i >= 0; --i) {
         if(lhs.At(i) != rhs.At(i)) {
-            return lhs.At(i) > rhs.At(i);
+            return lhs.At(i) < rhs.At(i);
         }
     }
     return false;
@@ -348,11 +348,11 @@ void LongInteger::MultiplyByLessThanBase(const int64_t value) {
 }
 
 void LongInteger::MultiplyByPowerOfBase(const uint64_t power) {
-    for(uint64_t i = 0; i < power; ++i) {
+    for(int i = 0; i < static_cast<int>(power); ++i) {
         data.push_back(0);
     }
-    for(int64_t i = data.size() - 1; i >= 0; --i) {
-        if(i >= (int64_t)power) {
+    for(int i = data.size() - 1; i >= 0; --i) {
+        if(i >= static_cast<int>(power)) {
             data[i] = data[i - power];
         }
         else {
@@ -376,4 +376,13 @@ std::istream& operator>>(std::istream& stream, LongInteger& value) {
     stream >> str;
     value = LongInteger(str);
     return stream;
+}
+
+LongInteger operator"" _li(unsigned long long int value) {
+    return LongInteger(value);
+}
+
+LongInteger operator"" _li(const char* string, size_t size) {
+    LongInteger result(std::string(string, size));
+    return result;
 }

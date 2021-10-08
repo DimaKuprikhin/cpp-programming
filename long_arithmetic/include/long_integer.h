@@ -39,17 +39,17 @@ public:
 
     LongInteger& operator-=(const LongInteger& rhs);
 
-    LongInteger operator*(const LongInteger& rhs) const noexcept;
+    LongInteger operator*(const LongInteger& rhs) const;
 
-    LongInteger& operator*=(const LongInteger& rhs) noexcept;
+    LongInteger& operator*=(const LongInteger& rhs);
 
-    LongInteger operator/(const LongInteger& rhs) const noexcept;
+    LongInteger operator/(const LongInteger& rhs) const;
 
-    LongInteger& operator/=(const LongInteger& rhs) noexcept;
+    LongInteger& operator/=(const LongInteger& rhs);
 
-    LongInteger operator%(const LongInteger& rhs) const noexcept;
+    LongInteger operator%(const LongInteger& rhs) const;
 
-    LongInteger& operator%=(const LongInteger& rhs) noexcept;
+    LongInteger& operator%=(const LongInteger& rhs);
 
     bool operator<(const LongInteger& rhs) const noexcept;
 
@@ -61,11 +61,11 @@ public:
 
     bool operator==(const LongInteger& rhs) const noexcept;
 
-    LongInteger Abs() const noexcept;
+    LongInteger Abs() const;
 
     bool IsZero() const noexcept;
 
-    std::string ToString() const noexcept;
+    std::string ToString() const;
 
 private:
     int64_t At(size_t index) const noexcept;
@@ -88,9 +88,9 @@ private:
                              LongInteger& quotient,
                              LongInteger& remainder) const;
 
-    static bool GreaterAbsoluteValue(
+    static bool LessAbsoluteValue(
         const LongInteger& lhs,
-        const LongInteger& rhs);
+        const LongInteger& rhs) noexcept;
 
     void MultiplyByLessThanBase(const int64_t value);
 
@@ -107,3 +107,7 @@ private:
 std::ostream& operator<<(std::ostream& stream, const LongInteger& value);
 
 std::istream& operator>>(std::istream& stream, LongInteger& value);
+
+LongInteger operator"" _li(unsigned long long int value);
+
+LongInteger operator"" _li(const char* string, size_t size);
