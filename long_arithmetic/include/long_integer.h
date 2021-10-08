@@ -5,27 +5,27 @@
 
 class LongInteger {
 public:
-    LongInteger() noexcept;
+    LongInteger();
 
-    LongInteger(int64_t value) noexcept;
+    LongInteger(int64_t value);
 
-    LongInteger(uint64_t value) noexcept;
+    LongInteger(uint64_t value);
 
     template<typename T, std::enable_if_t<std::is_integral_v<T> && std::is_signed_v<T>, bool> = true>
-    LongInteger(T value) noexcept
-        : LongInteger(static_cast<int64_t>(value))
-        {}
+    LongInteger(T value) : LongInteger(static_cast<int64_t>(value)) {}
 
     template<typename T, std::enable_if_t<std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
-    LongInteger(T value) noexcept
-        : LongInteger(static_cast<uint64_t>(value))
-        {}
+    LongInteger(T value) : LongInteger(static_cast<uint64_t>(value)) {}
 
     LongInteger(const std::string& number);
 
-    LongInteger(const LongInteger& other) noexcept;
+    LongInteger(const LongInteger& other);
 
-    LongInteger& operator=(const LongInteger& other) noexcept;
+    LongInteger(LongInteger&& other) noexcept;
+
+    LongInteger& operator=(const LongInteger& other);
+
+    LongInteger& operator=(LongInteger&& other) noexcept;
 
     LongInteger operator+() const noexcept;
 

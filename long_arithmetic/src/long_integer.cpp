@@ -3,21 +3,20 @@
 #include <sstream>
 #include <stdexcept>
 
-LongInteger::LongInteger() noexcept
+LongInteger::LongInteger()
     : sign(1)
     {}
 
-LongInteger::LongInteger(int64_t value) noexcept
-    : sign(value != 0 ? value / std::abs(value) : 1)
+LongInteger::LongInteger(int64_t value)
+    : sign(value >= 0 ? 1 : -1)
 {
-    value = std::abs(value);
     while(value) {
-        data.push_back(value % base);
+        data.push_back(std::abs(value % base));
         value /= base;
     }
 }
 
-LongInteger::LongInteger(uint64_t value) noexcept
+LongInteger::LongInteger(uint64_t value)
     : sign(1)
 {
     while(value) {
@@ -51,14 +50,25 @@ LongInteger::LongInteger(const std::string& number)
     Trim();
 }
 
-LongInteger::LongInteger(const LongInteger& other) noexcept
+LongInteger::LongInteger(const LongInteger& other)
     : sign(other.sign)
     , data(other.data)
     {}
 
-LongInteger& LongInteger::operator=(const LongInteger& other) noexcept {
+LongInteger::LongInteger(LongInteger&& other) noexcept
+    : sign(other.sign)
+    , data(std::move(other.data))
+    {}
+
+LongInteger& LongInteger::operator=(const LongInteger& other) {
     sign = other.sign;
     data = other.data;
+    return *this;
+}
+
+LongInteger& LongInteger::operator=(LongInteger&& other) noexcept {
+    sign = other.sign;
+    data = std::move(other.data);
     return *this;
 }
 
