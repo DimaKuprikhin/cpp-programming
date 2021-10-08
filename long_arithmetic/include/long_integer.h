@@ -35,9 +35,9 @@ public:
 
     LongInteger& operator+=(const LongInteger& rhs);
 
-    LongInteger operator-(const LongInteger& rhs) const noexcept;
+    LongInteger operator-(const LongInteger& rhs) const;
 
-    LongInteger& operator-=(const LongInteger& rhs) noexcept;
+    LongInteger& operator-=(const LongInteger& rhs);
 
     LongInteger operator*(const LongInteger& rhs) const noexcept;
 

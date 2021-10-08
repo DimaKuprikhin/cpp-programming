@@ -104,32 +104,26 @@ LongInteger& LongInteger::operator+=(const LongInteger& rhs) {
     return *this;
 }
 
-LongInteger LongInteger::operator-(const LongInteger& rhs) const noexcept {
+LongInteger LongInteger::operator-(const LongInteger& rhs) const {
     LongInteger result = *this;
     result -= rhs;
     return result;
 }
 
-LongInteger& LongInteger::operator-=(const LongInteger& rhs) noexcept {
-    if(sign == rhs.sign) {
-        if (Abs() >= rhs.Abs()) {
-            int carry = 0;
-            for(int i = 0; i < (int)rhs.data.size() || carry; ++i) {
-                const auto rhsValue = i < (int)rhs.data.size() ? rhs.data[i] : 0;
-                data[i] -= carry + rhsValue;
-                carry = 0;
-                if(data[i] < 0) {
-                    carry = 1;
-                    data[i] += base;
-                }
-            }
-            Trim();
-            return *this;
-        }
-        LongInteger result = -rhs;
-        return *this = result += *this;
+LongInteger& LongInteger::operator-=(const LongInteger& rhs) {
+    if(sign != rhs.sign) {
+        ElementWiseAddition(*this, rhs, *this);
     }
-    return *this += (-rhs);
+    else {
+        if(GreaterAbsoluteValue(*this, rhs)) {
+            ElementWiseSubtraction(*this, rhs, *this);
+        }
+        else {
+            ElementWiseSubtraction(rhs, *this, *this);
+            sign = -sign;
+        }
+    }
+    return *this;
 }
 
 LongInteger LongInteger::operator*(const LongInteger& rhs) const noexcept {
@@ -257,7 +251,7 @@ void LongInteger::ElementWiseSubtraction(
     const LongInteger& rhs,
     LongInteger& result)
 {
-    result.data.resize(std::max(lhs.data.size(), rhs.data.size()) + 1, 0);
+    result.data.resize(std::max(lhs.data.size(), rhs.data.size()), 0);
     int carry = 0;
     for(int i = 0; i < static_cast<int>(result.data.size()); ++i) {
         result.data[i] = lhs.At(i) - rhs.At(i) - carry;
