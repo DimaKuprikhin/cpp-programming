@@ -11,7 +11,7 @@ LongInteger::LongInteger(int64_t value)
     : sign(value >= 0 ? 1 : -1)
 {
     while(value) {
-        data.push_back(std::abs(value % base));
+        blocks.push_back(std::abs(value % base));
         value /= base;
     }
 }
@@ -20,16 +20,16 @@ LongInteger::LongInteger(uint64_t value)
     : sign(1)
 {
     while(value) {
-        data.push_back(value % base);
+        blocks.push_back(value % base);
         value /= base;
     }
 }
 
-LongInteger::LongInteger(const std::string& number)
+LongInteger::LongInteger(const std::string_view& number)
     : sign(1)
-    , data(0)
+    , blocks(0)
 {
-    data.reserve(number.size() / 9 + 1);
+    blocks.reserve(number.size() / 9 + 1);
     uint64_t powerOfTen = 1;
     for(int i = 0; i < (int)number.size(); ++i) {
         int stringPosition = number.size() - 1 - i;
@@ -40,35 +40,35 @@ LongInteger::LongInteger(const std::string& number)
         powerOfTen *= 10;
         if(i % 9 == 0) {
             powerOfTen = 1;
-            data.push_back(0);
+            blocks.push_back(0);
         }
         if(number[stringPosition] < '0' || number[stringPosition] > '9') {
             throw std::runtime_error("The given string is not a number");
         }
-        data.back() += (number[stringPosition] - '0') * powerOfTen;
+        blocks.back() += (number[stringPosition] - '0') * powerOfTen;
     }
     Trim();
 }
 
 LongInteger::LongInteger(const LongInteger& other)
     : sign(other.sign)
-    , data(other.data)
+    , blocks(other.blocks)
     {}
 
 LongInteger::LongInteger(LongInteger&& other) noexcept
     : sign(other.sign)
-    , data(std::move(other.data))
+    , blocks(std::move(other.blocks))
     {}
 
 LongInteger& LongInteger::operator=(const LongInteger& other) {
     sign = other.sign;
-    data = other.data;
+    blocks = other.blocks;
     return *this;
 }
 
 LongInteger& LongInteger::operator=(LongInteger&& other) noexcept {
     sign = other.sign;
-    data = std::move(other.data);
+    blocks = std::move(other.blocks);
     return *this;
 }
 
@@ -134,10 +134,10 @@ LongInteger LongInteger::operator*(const LongInteger& rhs) const {
 
 LongInteger& LongInteger::operator*=(const LongInteger& rhs) {
     LongInteger result;
-    for(size_t i = 0; i < rhs.data.size(); ++i) {
+    for(size_t i = 0; i < rhs.blocks.size(); ++i) {
         auto summand = *this;
         summand.MultiplyByPowerOfBase(i);
-        summand.MultiplyByLessThanBase(rhs.data[i]);
+        summand.MultiplyByLessThanBase(rhs.blocks[i]);
         result += summand;
     }
     result.sign = sign * rhs.sign;
@@ -202,7 +202,7 @@ LongInteger LongInteger::Abs() const {
 }
 
 bool LongInteger::IsZero() const noexcept {
-    return !data.size();
+    return !blocks.size();
 }
 
 std::string LongInteger::ToString() const {
@@ -213,16 +213,16 @@ std::string LongInteger::ToString() const {
     if(sign == -1) {
         result << '-';
     }
-    result << std::to_string(data.back());
-    for(int i = data.size() - 2; i >= 0; --i) {
-        result << std::setw(9) << std::setfill('0') << data[i];
+    result << std::to_string(blocks.back());
+    for(int i = blocks.size() - 2; i >= 0; --i) {
+        result << std::setw(9) << std::setfill('0') << blocks[i];
     }
     return result.str();
 }
 
 int64_t LongInteger::At(size_t index) const noexcept {
-    if(index < data.size()) {
-        return data[index];
+    if(index < blocks.size()) {
+        return blocks[index];
     }
     return 0;
 }
@@ -232,13 +232,13 @@ void LongInteger::ElementWiseAddition(
     const LongInteger& second,
     LongInteger& result) 
 {
-    result.data.resize(std::max(first.data.size(), second.data.size()) + 1, 0);
+    result.blocks.resize(std::max(first.blocks.size(), second.blocks.size()) + 1, 0);
     int carry = 0;
-    for(int i = 0; i < static_cast<int>(result.data.size()); ++i) {
-        result.data[i] = carry + first.At(i) + second.At(i);
+    for(int i = 0; i < static_cast<int>(result.blocks.size()); ++i) {
+        result.blocks[i] = carry + first.At(i) + second.At(i);
         carry = 0;
-        if(result.data[i] >= base) {
-            result.data[i] -= base;
+        if(result.blocks[i] >= base) {
+            result.blocks[i] -= base;
             carry = 1;
         }
     }
@@ -250,13 +250,13 @@ void LongInteger::ElementWiseSubtraction(
     const LongInteger& rhs,
     LongInteger& result)
 {
-    result.data.resize(std::max(lhs.data.size(), rhs.data.size()), 0);
+    result.blocks.resize(std::max(lhs.blocks.size(), rhs.blocks.size()), 0);
     int carry = 0;
-    for(int i = 0; i < static_cast<int>(result.data.size()); ++i) {
-        result.data[i] = lhs.At(i) - rhs.At(i) - carry;
+    for(int i = 0; i < static_cast<int>(result.blocks.size()); ++i) {
+        result.blocks[i] = lhs.At(i) - rhs.At(i) - carry;
         carry = 0;
-        if(result.data[i] < 0) {
-            result.data[i] += base;
+        if(result.blocks[i] < 0) {
+            result.blocks[i] += base;
             carry = 1;
         }
     }
@@ -268,10 +268,10 @@ void LongInteger::DivideByLessThanBase(const int64_t value) {
         throw std::runtime_error("Value must be less than base");
     }
     int64_t carry = 0;
-    for(int i = data.size() - 1; i >= 0; --i) {
-        int64_t block = (carry * base + data[i]) / value;
-        carry = (carry * base + data[i]) % value;
-        data[i] = block;
+    for(int i = blocks.size() - 1; i >= 0; --i) {
+        int64_t block = (carry * base + blocks[i]) / value;
+        carry = (carry * base + blocks[i]) % value;
+        blocks[i] = block;
     }
     Trim();
 }
@@ -283,18 +283,23 @@ void LongInteger::DivideWithRemainder(const LongInteger& divisor,
     if(divisor.IsZero()) {
         throw std::runtime_error("Division by zero");
     }
-    if(data.size() < divisor.data.size()) {
+    if(blocks.size() < divisor.blocks.size()) {
         quotient = 0;
         remainder = *this;
         return;
     }
 
     remainder = this->Abs();
+    // subtrahend - вычитаемое, использующиеся для деления в столбик вида
+    // |divisor| * 10 ^ n : |divisor| * 10 ^ n <= *this && |divisor| * 10 ^ (n + 1) > *this.
     LongInteger subtrahend = divisor.Abs();
-    subtrahend.MultiplyByPowerOfBase(data.size() - divisor.data.size());
+    subtrahend.MultiplyByPowerOfBase(blocks.size() - divisor.blocks.size());
     quotient = 0;
+    // quotientSummand - число, на которое увеличится quotient при вычитании
+    // subtrahend из remainder. quotientSummand = subtrahend / divisor.
     LongInteger quotientSummand(1);
-    quotientSummand.MultiplyByPowerOfBase(data.size() - divisor.data.size());
+    quotientSummand.MultiplyByPowerOfBase(blocks.size() - divisor.blocks.size());
+    // Умножаем subtrahend на максимальную степень 10, чтобы выполнялось условие выше.
     while(subtrahend < remainder) {
         subtrahend.MultiplyByLessThanBase(10);
         quotientSummand.MultiplyByLessThanBase(10);
@@ -302,6 +307,7 @@ void LongInteger::DivideWithRemainder(const LongInteger& divisor,
     subtrahend.DivideByLessThanBase(10);
     quotientSummand.DivideByLessThanBase(10);
 
+    // Производим деление в столбик.
     while(remainder >= divisor && quotientSummand > 0) {
         while(remainder >= subtrahend) {
             remainder -= subtrahend;
@@ -318,10 +324,10 @@ bool LongInteger::LessAbsoluteValue(
     const LongInteger& lhs,
     const LongInteger& rhs) noexcept
 {
-    if(lhs.data.size() != rhs.data.size()) {
-        return lhs.data.size() < rhs.data.size();
+    if(lhs.blocks.size() != rhs.blocks.size()) {
+        return lhs.blocks.size() < rhs.blocks.size();
     }
-    for(int i = lhs.data.size() - 1; i >= 0; --i) {
+    for(int i = lhs.blocks.size() - 1; i >= 0; --i) {
         if(lhs.At(i) != rhs.At(i)) {
             return lhs.At(i) < rhs.At(i);
         }
@@ -334,7 +340,7 @@ void LongInteger::MultiplyByLessThanBase(const int64_t value) {
         throw std::runtime_error("Value must be less than base");
     }
     int64_t carry = 0;
-    for(auto& block : data) {
+    for(auto& block : blocks) {
         block = block * value + carry;
         carry = 0;
         if(block >= base) {
@@ -343,27 +349,27 @@ void LongInteger::MultiplyByLessThanBase(const int64_t value) {
         }
     }
     if(carry > 0) {
-        data.push_back(carry);
+        blocks.push_back(carry);
     }
 }
 
 void LongInteger::MultiplyByPowerOfBase(const uint64_t power) {
     for(int i = 0; i < static_cast<int>(power); ++i) {
-        data.push_back(0);
+        blocks.push_back(0);
     }
-    for(int i = data.size() - 1; i >= 0; --i) {
+    for(int i = blocks.size() - 1; i >= 0; --i) {
         if(i >= static_cast<int>(power)) {
-            data[i] = data[i - power];
+            blocks[i] = blocks[i - power];
         }
         else {
-            data[i] = 0;
+            blocks[i] = 0;
         }
     }
 }
 
 void LongInteger::Trim() noexcept {
-    while(data.size() && !data.back()) {
-        data.pop_back();
+    while(blocks.size() && !blocks.back()) {
+        blocks.pop_back();
     }
 }
 
