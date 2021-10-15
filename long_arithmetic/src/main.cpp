@@ -4,51 +4,35 @@
 #include <stdexcept>
 #include <map>
 #include <functional>
+#include <expression_evaluator.h>
 
-int main(int argc, char** argv) {
-    if(argc != 4) {
-        std::cout << "Using: ./long_arithmetic [FIRST_NUMBER] [OPERATION] [SECOND_NUMBER]"
-                  << std::endl;
-        return 0;
-    }
+int main() {
+    std::cout << "Enter \"help\" for hints and \"exit\" to exit the program." << std::endl;
+    while(true) {
+        std::cout << ">" << std::flush;
+        std::string input;
+        std::getline(std::cin, input);
+        if(input == "help") {
+            std::cout << "Supported operations: \"+\", \"-\", \"*\", \"/\", \"%\".\n"
+                      << "Operators priority by descending:\n"
+                      << "- \"*\", \"/\", \"%\"\n"
+                      << "- \"+\", \"-\"\n"
+                      << "Operators with the same priority evaluated sequentially.\n"
+                      << "Unary minus is properly processed only for the first number in\n"
+                      << "an expression and for the first number after an open brace.\n"
+                      << "\"-2 + (-3 * 5)\" -> right\n"
+                      << "\"3 - -2\" -> wrond\n" << std::flush;
+            continue;
+        }
+        if(input == "exit") {
+            break;
+        }
 
-    std::string operation;
-    LongInteger lhs, rhs;
-    try {
-        lhs = std::string(argv[1]);
-        operation = argv[2];
-        rhs = std::string(argv[3]);
-    } catch(std::exception& ex) {
-        std::cout << ex.what() << std::endl;
-        return 0;
-    }
-
-    std::map<std::string, std::function<LongInteger(const LongInteger&, const LongInteger&)>>
-    integerOperations({
-        { "+", [](const auto& lhs, const auto& rhs)->auto { return lhs + rhs; } },
-        { "-", [](const auto& lhs, const auto& rhs)->auto { return lhs - rhs; } },
-        { "*", [](const auto& lhs, const auto& rhs)->auto { return lhs * rhs; } },
-        { "/", [](const auto& lhs, const auto& rhs)->auto { return lhs / rhs; } },
-        { "%", [](const auto& lhs, const auto& rhs)->auto { return lhs % rhs; } }
-    });
-    std::map<std::string, std::function<bool(const LongInteger&, const LongInteger&)>>
-    logicalOperations({
-        { "<", [](const auto& lhs, const auto& rhs)->auto { return lhs < rhs; } },
-        { ">", [](const auto& lhs, const auto& rhs)->auto { return lhs > rhs; } },
-        { "<=", [](const auto& lhs, const auto& rhs)->auto { return lhs <= rhs; } },
-        { ">=", [](const auto& lhs, const auto& rhs)->auto { return lhs >= rhs; } },
-        { "==", [](const auto& lhs, const auto& rhs)->auto { return lhs == rhs; } }
-    });
-
-    if(integerOperations.find(operation) != integerOperations.end()) {
-        std::cout << integerOperations.find(operation)->second(lhs, rhs).ToString()
-                  << std::endl;
-    }
-    else if(logicalOperations.find(operation) != logicalOperations.end()) {
-        std::cout << (logicalOperations.find(operation)->second(lhs, rhs) ? "True" : "False")
-                  << std::endl;
-    }
-    else {
-        std::cout << "Wrong operation. Possible operations: +, -, *, /, %, <, >, <=, >=, ==" << std::endl;
+        try {
+            std::cout << ExpressionEvaluator::Evaluate(input) << std::endl;
+        }
+        catch(...) {
+            std::cout << "Incorrect expression. Enter \"help\" for hints." << std::endl;
+        }
     }
 }
