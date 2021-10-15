@@ -1,7 +1,6 @@
 #pragma once
 #include <functional>
-#include "long_integer.h"
-#include <unordered_set>
+#include <long_integer.h>
 
 /* 
 Содержит метод, рекурсивно вычисляющий значение выражения.

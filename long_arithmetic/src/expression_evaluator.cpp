@@ -1,5 +1,3 @@
-#include <cstring>
-#include <exception>
 #include <expression_evaluator.h>
 
 LongInteger ExpressionEvaluator::Evaluate(const std::string_view& expression) {

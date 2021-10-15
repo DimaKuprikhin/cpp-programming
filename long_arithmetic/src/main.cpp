@@ -1,10 +1,6 @@
-#include <long_integer.h>
-#include <cstring>
-#include <iostream>
-#include <stdexcept>
-#include <map>
-#include <functional>
 #include <expression_evaluator.h>
+#include <iostream>
+#include <long_integer.h>
 
 int main() {
     std::cout << "Enter \"help\" for hints and \"exit\" to exit the program." << std::endl;

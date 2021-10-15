@@ -1,5 +1,5 @@
-#include <gtest/gtest.h>
 #include <expression_evaluator.h>
+#include <gtest/gtest.h>
 
 TEST(ExpressionParserTestSuite, Test) {
     EXPECT_EQ(ExpressionEvaluator::Evaluate("1"), 1);
